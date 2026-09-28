@@ -335,3 +335,13 @@ img{max-width:100%}
 .brief-card:hover .card-photo{transform:scale(1.07);filter:saturate(1.05)}
 @media(max-width:650px){.hero-art>.pixel-liquid{opacity:.82}.hero-art:before{animation-duration:7s}.brief-card:hover .card-photo{transform:none}}
 @media(prefers-reduced-motion:reduce){.hero-art:before,.numbers:after,.newsletter:after{animation:none!important}}
+
+/* Soepele animaties: alleen transform/opacity bewegen, zodat de browser niets opnieuw hoeft te tekenen */
+body::before{filter:none;will-change:transform;backface-visibility:hidden}
+.hero-art>.pixel-liquid{transform:translateZ(0)}
+.hero-art:before{will-change:transform}
+.brief-card{will-change:auto}
+.brief-card:hover{will-change:transform}
+.numbers:after,.newsletter:after{will-change:transform;animation-name:orbit-drift;animation-duration:14s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes orbit-drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-3%,4%,0) scale(1.06)}}
+@media(prefers-reduced-motion:reduce){body::before{will-change:auto}.numbers:after,.newsletter:after{will-change:auto}}

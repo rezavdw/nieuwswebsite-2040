@@ -207,65 +207,116 @@ if (heroArt) {
   liquid.setAttribute('aria-hidden', 'true');
   heroArt.append(liquid);
   const ctx = liquid.getContext('2d', { alpha: true });
-  const compact = matchMedia('(max-width: 650px)').matches;
-  const width = compact ? 96 : 144;
-  const height = compact ? 64 : 96;
-  liquid.width = width;
-  liquid.height = height;
-  const pixels = ctx.createImageData(width, height);
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const palette = [[69, 202, 157], [101, 185, 235], [160, 126, 230], [246, 145, 119], [250, 255, 252]];
-  const bayer = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
-  let pointer = { x: .5, y: .5, active: false };
-  let frame = 0;
-  let lastPaint = 0;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const compactQuery = matchMedia('(max-width: 650px)');
+  const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((value) => (value / 16 - .5) * .13);
 
+  // Kleurverloop één keer vooraf berekenen, zodat er per pixel niets wordt aangemaakt.
+  const palette = [[69, 202, 157], [101, 185, 235], [160, 126, 230], [246, 145, 119], [250, 255, 252]];
+  const lut = new Uint32Array(256);
+  for (let i = 0; i < 256; i += 1) {
+    const shade = i / 255;
+    const stop = Math.min(palette.length - 2, Math.floor(shade * (palette.length - 1)));
+    const mix = shade * (palette.length - 1) - stop;
+    const [r, g, b] = palette[stop].map((channel, c) => Math.round(channel + (palette[stop + 1][c] - channel) * mix));
+    const a = Math.round(175 + shade * 75);
+    lut[i] = (a << 24 | b << 16 | g << 8 | r) >>> 0;
+  }
+
+  let width = 0;
+  let height = 0;
+  let pixels;
+  let buffer;
+  function setSize() {
+    const compact = compactQuery.matches;
+    width = compact ? 96 : 144;
+    height = compact ? 64 : 96;
+    liquid.width = width;
+    liquid.height = height;
+    pixels = ctx.createImageData(width, height);
+    buffer = new Uint32Array(pixels.data.buffer);
+  }
+  setSize();
+
+  // De muis trekt de vloeistof mee met wat vertraging, zodat hij nooit verspringt.
+  const target = { x: .5, y: .5, active: false };
+  const follow = { x: .5, y: .5 };
   heroArt.addEventListener('pointermove', (event) => {
     const box = heroArt.getBoundingClientRect();
-    pointer = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height, active: true };
+    target.x = (event.clientX - box.left) / box.width;
+    target.y = (event.clientY - box.top) / box.height;
+    target.active = true;
   });
-  heroArt.addEventListener('pointerleave', () => { pointer.active = false; });
+  heroArt.addEventListener('pointerleave', () => { target.active = false; });
+
+  const blobs = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  let clock = 0;
+  let lastTime = 0;
+  let frame = 0;
+  let visible = true;
 
   function paintLiquid(time) {
-    if (time - lastPaint < (compact ? 52 : 38) && !reducedMotion) { frame = requestAnimationFrame(paintLiquid); return; }
-    lastPaint = time;
-    const t = reducedMotion ? 0 : time * .00032;
-    const mouseX = pointer.active ? pointer.x : .5 + Math.sin(t * 1.2) * .2;
-    const mouseY = pointer.active ? pointer.y : .5 + Math.cos(t * .9) * .18;
-    const blobs = [
-      [mouseX, mouseY, .24],
-      [.25 + Math.sin(t + 1) * .12, .35 + Math.cos(t * .8) * .12, .2],
-      [.73 + Math.cos(t * .7) * .13, .62 + Math.sin(t * 1.1) * .12, .24],
-      [.48 + Math.sin(t * .6 + 2) * .2, .8 + Math.cos(t * .8 + 1) * .08, .17]
-    ];
-    for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
-      const nx = x / width;
+    const delta = lastTime ? Math.min(time - lastTime, 50) : 16;
+    lastTime = time;
+    if (!reducedMotion.matches) clock += delta * .00032;
+    const t = clock;
+    const idleX = .5 + Math.sin(t * 1.2) * .2;
+    const idleY = .5 + Math.cos(t * .9) * .18;
+    const ease = 1 - Math.pow(.9, delta / 16);
+    follow.x += ((target.active ? target.x : idleX) - follow.x) * ease;
+    follow.y += ((target.active ? target.y : idleY) - follow.y) * ease;
+
+    blobs[0][0] = follow.x; blobs[0][1] = follow.y; blobs[0][2] = 1 / (.24 * .24);
+    blobs[1][0] = .25 + Math.sin(t + 1) * .12; blobs[1][1] = .35 + Math.cos(t * .8) * .12; blobs[1][2] = 1 / (.2 * .2);
+    blobs[2][0] = .73 + Math.cos(t * .7) * .13; blobs[2][1] = .62 + Math.sin(t * 1.1) * .12; blobs[2][2] = 1 / (.24 * .24);
+    blobs[3][0] = .48 + Math.sin(t * .6 + 2) * .2; blobs[3][1] = .8 + Math.cos(t * .8 + 1) * .08; blobs[3][2] = 1 / (.17 * .17);
+
+    let index = 0;
+    for (let y = 0; y < height; y += 1) {
       const ny = y / height;
-      let field = 0;
-      for (const [bx, by, radius] of blobs) {
-        const dx = (nx - bx) * 1.05;
-        const dy = (ny - by) * .92;
-        field += Math.exp(-(dx * dx + dy * dy) / (radius * radius));
+      const row = (y & 3) * 4;
+      for (let x = 0; x < width; x += 1) {
+        const nx = x / width;
+        let field = 0;
+        for (let i = 0; i < 4; i += 1) {
+          const blob = blobs[i];
+          const dx = (nx - blob[0]) * 1.05;
+          const dy = (ny - blob[1]) * .92;
+          field += Math.exp(-(dx * dx + dy * dy) * blob[2]);
+        }
+        if (field > .64 + bayer[row + (x & 3)]) {
+          const shade = (field - .64) / .62;
+          buffer[index] = lut[shade >= 1 ? 255 : shade <= 0 ? 0 : (shade * 255) | 0];
+        } else buffer[index] = 0;
+        index += 1;
       }
-      const dither = (bayer[y % 4][x % 4] / 16 - .5) * .13;
-      const edge = .64 + dither;
-      const index = (y * width + x) * 4;
-      if (field > edge) {
-        const shade = Math.max(0, Math.min(1, (field - .64) / .62));
-        const stop = Math.min(palette.length - 2, Math.floor(shade * (palette.length - 1)));
-        const mix = shade * (palette.length - 1) - stop;
-        const color = palette[stop].map((channel, i) => Math.round(channel + (palette[stop + 1][i] - channel) * mix));
-        pixels.data[index] = color[0];
-        pixels.data[index + 1] = color[1];
-        pixels.data[index + 2] = color[2];
-        pixels.data[index + 3] = Math.round(175 + Math.min(75, shade * 75));
-      } else pixels.data[index + 3] = 0;
     }
     ctx.putImageData(pixels, 0, 0);
-    if (!reducedMotion) frame = requestAnimationFrame(paintLiquid);
+    frame = 0;
+    schedule();
   }
-  paintLiquid(0);
-  window.addEventListener('pagehide', () => cancelAnimationFrame(frame), { once: true });
+
+  // Alleen tekenen als de hoofdfoto in beeld is en het tabblad zichtbaar is.
+  function schedule() {
+    if (frame || !visible || document.hidden || reducedMotion.matches) return;
+    frame = requestAnimationFrame(paintLiquid);
+  }
+  function restart() {
+    lastTime = 0;
+    if (frame) return;
+    if (reducedMotion.matches) paintLiquid(performance.now());
+    else schedule();
+  }
+
+  new IntersectionObserver(([entry]) => {
+    visible = entry.isIntersecting;
+    if (visible) restart();
+    else if (frame) { cancelAnimationFrame(frame); frame = 0; }
+  }).observe(heroArt);
+  document.addEventListener('visibilitychange', restart);
+  compactQuery.addEventListener('change', () => { setSize(); restart(); });
+  reducedMotion.addEventListener('change', restart);
+  paintLiquid(performance.now());
 }
 
 // Kaarten reageren licht op aanwijzen met muis; touchschermen houden de vaste lay-out.
