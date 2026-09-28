@@ -214,7 +214,7 @@ if (heroArt) {
   liquid.height = height;
   const pixels = ctx.createImageData(width, height);
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const palette = [[116, 224, 190], [149, 204, 239], [184, 163, 239], [255, 177, 148], [248, 255, 250]];
+  const palette = [[69, 202, 157], [101, 185, 235], [160, 126, 230], [246, 145, 119], [250, 255, 252]];
   const bayer = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
   let pointer = { x: .5, y: .5, active: false };
   let frame = 0;
@@ -258,7 +258,7 @@ if (heroArt) {
         pixels.data[index] = color[0];
         pixels.data[index + 1] = color[1];
         pixels.data[index + 2] = color[2];
-        pixels.data[index + 3] = Math.round(95 + Math.min(90, shade * 95));
+        pixels.data[index + 3] = Math.round(175 + Math.min(75, shade * 75));
       } else pixels.data[index + 3] = 0;
     }
     ctx.putImageData(pixels, 0, 0);

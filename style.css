@@ -322,3 +322,16 @@ img{max-width:100%}
 @media(prefers-reduced-motion:reduce){.hero-art:before,.live i{animation:none}.brief-card,.article-dialog[open],.article-dialog[open]::backdrop{animation:none!important;transition:none!important;transform:none!important}}
 .hero-art>.pixel-liquid{mix-blend-mode:multiply;opacity:.72}
 @media(max-width:650px){.hero-art>.pixel-liquid{opacity:.62}}
+
+/* Maak de beweging zichtbaar op het eerste scherm, ook zonder hover */
+.hero-art>.pixel-liquid{opacity:.9;mix-blend-mode:normal;filter:saturate(1.2)}
+.hero-art:before{inset:-20% -70%;z-index:3;opacity:.78;background:linear-gradient(110deg,transparent 37%,#ffffff00 43%,#ffffffb8 49%,#d8fff064 52%,transparent 59%);background-size:100% 100%;transform:translateX(-62%);animation:cover-sweep 5.2s cubic-bezier(.42,0,.25,1) infinite}
+@keyframes cover-sweep{0%,13%{transform:translateX(-62%)}76%,100%{transform:translateX(62%)}}
+.hero-art:after{z-index:4}
+.numbers:after{animation:orbit-float 30s linear infinite}
+.newsletter:after{animation:orbit-float 38s linear infinite reverse}
+@keyframes orbit-float{to{transform:rotate(360deg)}}
+.brief-card .card-photo{transition:transform .65s cubic-bezier(.2,.7,.2,1),filter .65s}
+.brief-card:hover .card-photo{transform:scale(1.07);filter:saturate(1.05)}
+@media(max-width:650px){.hero-art>.pixel-liquid{opacity:.82}.hero-art:before{animation-duration:7s}.brief-card:hover .card-photo{transform:none}}
+@media(prefers-reduced-motion:reduce){.hero-art:before,.numbers:after,.newsletter:after{animation:none!important}}
