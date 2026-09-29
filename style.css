@@ -305,11 +305,8 @@ img{max-width:100%}
 /* Kleine interactieve animaties voor de 2040-cover */
 .hero-art{isolation:isolate;overflow:hidden}
 .hero-art>img{position:relative;z-index:0}
-.hero-art>.pixel-liquid{position:absolute;inset:0;z-index:2;width:100%;height:100%;opacity:.76;image-rendering:pixelated;mix-blend-mode:screen;pointer-events:none}
-.hero-art:before{z-index:3;pointer-events:none;animation:cover-glow 9s ease-in-out infinite alternate}
 .hero-art:after{z-index:4;pointer-events:none}
 .photo-credit{z-index:5}
-@keyframes cover-glow{from{opacity:.35;filter:hue-rotate(0deg)}to{opacity:.8;filter:hue-rotate(28deg)}}
 .brief-card{transform:perspective(850px) rotateX(var(--tilt-y,0deg)) rotateY(var(--tilt-x,0deg));transition:transform .22s ease,border-color .22s,box-shadow .22s;will-change:transform}
 .brief-card:hover{transform:perspective(850px) rotateX(var(--tilt-y,0deg)) rotateY(var(--tilt-x,0deg)) translateY(-4px)}
 .article-dialog[open]{animation:article-arrive .34s cubic-bezier(.18,.75,.25,1) both}
@@ -318,28 +315,21 @@ img{max-width:100%}
 @keyframes backdrop-arrive{from{opacity:0}to{opacity:1}}
 .live i{animation:live-pulse 2.2s ease-in-out infinite}
 @keyframes live-pulse{50%{box-shadow:0 0 0 7px #77b99410,0 0 14px #77b99475}}
-@media(max-width:650px){.hero-art>.pixel-liquid{opacity:.65}.brief-card{transform:none;will-change:auto}.brief-card:hover{transform:translateY(-2px)}}
-@media(prefers-reduced-motion:reduce){.hero-art:before,.live i{animation:none}.brief-card,.article-dialog[open],.article-dialog[open]::backdrop{animation:none!important;transition:none!important;transform:none!important}}
-.hero-art>.pixel-liquid{mix-blend-mode:multiply;opacity:.72}
-@media(max-width:650px){.hero-art>.pixel-liquid{opacity:.62}}
+@media(max-width:650px){.brief-card{transform:none;will-change:auto}.brief-card:hover{transform:translateY(-2px)}}
+@media(prefers-reduced-motion:reduce){.live i{animation:none}.brief-card,.article-dialog[open],.article-dialog[open]::backdrop{animation:none!important;transition:none!important;transform:none!important}}
 
 /* Maak de beweging zichtbaar op het eerste scherm, ook zonder hover */
-.hero-art>.pixel-liquid{opacity:.9;mix-blend-mode:normal;filter:saturate(1.2)}
-.hero-art:before{inset:-20% -70%;z-index:3;opacity:.78;background:linear-gradient(110deg,transparent 37%,#ffffff00 43%,#ffffffb8 49%,#d8fff064 52%,transparent 59%);background-size:100% 100%;transform:translateX(-62%);animation:cover-sweep 5.2s cubic-bezier(.42,0,.25,1) infinite}
-@keyframes cover-sweep{0%,13%{transform:translateX(-62%)}76%,100%{transform:translateX(62%)}}
 .hero-art:after{z-index:4}
 .numbers:after{animation:orbit-float 30s linear infinite}
 .newsletter:after{animation:orbit-float 38s linear infinite reverse}
 @keyframes orbit-float{to{transform:rotate(360deg)}}
 .brief-card .card-photo{transition:transform .65s cubic-bezier(.2,.7,.2,1),filter .65s}
 .brief-card:hover .card-photo{transform:scale(1.07);filter:saturate(1.05)}
-@media(max-width:650px){.hero-art>.pixel-liquid{opacity:.82}.hero-art:before{animation-duration:7s}.brief-card:hover .card-photo{transform:none}}
-@media(prefers-reduced-motion:reduce){.hero-art:before,.numbers:after,.newsletter:after{animation:none!important}}
+@media(max-width:650px){.brief-card:hover .card-photo{transform:none}}
+@media(prefers-reduced-motion:reduce){.numbers:after,.newsletter:after{animation:none!important}}
 
 /* Soepele animaties: alleen transform/opacity bewegen, zodat de browser niets opnieuw hoeft te tekenen */
 body::before{filter:none;will-change:transform;backface-visibility:hidden}
-.hero-art>.pixel-liquid{transform:translateZ(0)}
-.hero-art:before{will-change:transform}
 .brief-card{will-change:auto}
 .brief-card:hover{will-change:transform}
 .numbers:after,.newsletter:after{will-change:transform;animation-name:orbit-drift;animation-duration:14s;animation-timing-function:ease-in-out;animation-direction:alternate}
